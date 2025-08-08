@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Directory to store Pokémon data
+DATA_DIR="pokemon_data"
+mkdir -p "$DATA_DIR"
+
+# List of Pokémon to fetch
+POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
+
+# Function to fetch Pokémon data with retries
+fetch_pokemon() {
+    local pokemon=$1
+    local url="https://pokeapi.co/api/v2/pokemon/$pokemon"
+    local file="$DATA_DIR/$pokemon.json"
+    local max_retries=3
+    local attempt=1
+
+    echo "Fetching data for $pokemon..."
+
+    while (( attempt <= max_retries )); do
+        if curl -s -f "$url" -o "$file"; then
+            echo "Saved data to $file ✅"
+            return 0
+        else
+            echo "Attempt $attempt for $pokemon failed."
+            (( attempt++ ))
+            sleep 2
+        fi
+    done
+
+    echo "[$(date)] Failed to fetch data for $pokemon after $max_retries attempts" >> "$DATA_DIR/errors.txt"
+}
+
+# Loop through Pokémon list
+for POKEMON in "${POKEMONS[@]}"; do
+    fetch_pokemon "$POKEMON"
+    sleep 2 # Delay to avoid API rate limiting
+done
